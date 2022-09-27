@@ -98,7 +98,7 @@ def running_admins(name, instance):
     running_instances.append(instance)
     instance_ids.append(instance['InstanceId'])
     instance_names.append(name)
-    days=(today_date_utc - instance['LaunchTime']).days
+    days=(today_date_utc - instance['LaunchTime'])
     # running_times = "InstanceID: " + instance['InstanceId'] + "," + ' Instance Name: ' +name + "," + " Number of days running: " + str(days)
     running_times = [name, str(days)]
     msg_running.append(running_times)

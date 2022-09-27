@@ -7,8 +7,12 @@ import matplotlib.pyplot as plt
 import pandas
 import pytz
 
-# if running in vscode in wsl, install jupyter to view graph in interactive window
-# This will create 2 csv files in the local directory with stopped and running admin vms.
+# NOTE: if running in vscode in wsl, install jupyter to view graph in interactive window
+
+# This script will produce:
+# 1. 2 csv files in the local directory with stopped and running admin vms.
+# 2. a list of each admins' status via standout, can be piped into a file, etc
+# 3. bar graphs via matplotlib/jupyter
 
 aws_profile = "cctqa"
 region = 'us-east-1'

@@ -91,7 +91,7 @@ def stopped_admins(name, instance):
     stopped_reasons.append(stopped_reason)
     transition_timestamp = datetime.strptime(instance['StateTransitionReason'][16:35], '%Y-%m-%d %H:%M:%S')
     transition_timestamp = transition_timestamp.astimezone(pytz.utc)
-    days=(today_date_utc - transition_timestamp)
+    days=(today_date_utc - transition_timestamp).days
     hours=(today_date_utc.hour - transition_timestamp.hour)
     # if days < 1: 
     #     days = hours

@@ -1,34 +1,36 @@
 #!/usr/bin/python3.8
 import boto3
-import botocore
-from datetime import datetime, timedelta, timezone, time
+from datetime import datetime, timedelta, timezone, tzinfo
 import csv 
 import matplotlib.pyplot as plt
 import pandas
 import pytz
+import random
+import os
 
 # NOTE: if running in vscode in wsl, install jupyter to view graph in interactive window
 
+# This script will query AWS for ec2 instances which have the slumbering-admin and t_role=admin tags and are in
+# the running or stopped state. 
 # This script will produce:
 # 1. 2 csv files in the local directory with stopped and running admin vms.
-# 2. a list of each admins' status via standout, can be piped into a file, etc
-# 3. bar graphs via matplotlib/jupyter
+# 2. a list of each admins' stopped/running status via stdout, can be piped into another file, etc
+# 3. bar graphs that display each admins' stopped/running status
 
-aws_profile = "cctqa"
-region = 'us-east-1'
+aws_profile = os.getenv('AWS_PROFILE')
+region = os.getenv('region')
 
 boto3.setup_default_session(profile_name=aws_profile)
-sns_client = boto3.client('sns', region)
 client = boto3.client('ec2', region)
 
 today_date_utc = datetime.now(timezone.utc)
 today_date_format = today_date_utc.strftime('%Y-%m-%d %H:%M:%S')
+today_date_local = datetime.now().astimezone() # empty brackets = local timezone
 
 running_reasons = []
 stopped_reasons = []
 msg_running=[]
 msg_stopped=[]
-transition_timestamps=[]
 
 instance_ids = []
 instance_names = []
@@ -86,21 +88,18 @@ def main():
     print("Stopped Admins:\n",stopped_stdout) 
     bar_graph_stopped(stopped_file)
 
-
 def stopped_admins(name, instance):
     stopped_instances.append(instance)
     instance_ids.append(instance['InstanceId'])
     instance_names.append(name)
     stopped_reason = instance['StateTransitionReason']
     stopped_reasons.append(stopped_reason)
-    transition_timestamp = datetime.strptime(instance['StateTransitionReason'][16:35], '%Y-%m-%d %H:%M:%S')
-    transition_timestamp = transition_timestamp.astimezone(pytz.utc)
-    days=(today_date_utc - transition_timestamp).days
-    hours=(today_date_utc.hour - transition_timestamp.hour)
-    # if days < 1: 
-    #     days = hours
-    stopped_times_str = "InstanceID: " + instance['InstanceId'] + "," + ' Instance Name: ' +name + "," + " Shutdown Time: " + str(transition_timestamp) + "," + " Number of days stopped: " + str(days)
-    stopped_times = [name, str(days)]
+    transition_timestamp = datetime.strptime(instance['StateTransitionReason'][16:39], '%Y-%m-%d %H:%M:%S %Z')
+    transition_timestamp_local = transition_timestamp.astimezone()  
+    transition_timestamp_format = transition_timestamp_local.strftime('%Y-%m-%d %H:%M:%S')
+    days=abs(today_date_local - transition_timestamp_local).days
+    stopped_times_str = "InstanceID: " + instance['InstanceId'] + "," + ' Instance Name: ' +name + "," + " Shutdown Time: " + str(transition_timestamp_format) + "," + " Number of days stopped: " + str(days)
+    stopped_times = [name, str(days+random.randrange(1,6))] # test with random values
     msg_stopped.append(stopped_times)
     msg_stopped_str.append(stopped_times_str)
     msg_stopped_str.append("\n")
@@ -112,8 +111,10 @@ def running_admins(name, instance):
     running_instances.append(instance)
     instance_ids.append(instance['InstanceId'])
     instance_names.append(name)
-    days=(today_date_utc - instance['LaunchTime']).days
-    running_times_str = "InstanceID: " + instance['InstanceId'] + "," + ' Instance Name: ' +name + "," + " Number of days running: " + str(days)
+    launchtime_local = instance['LaunchTime'].astimezone()
+    launchtime_format = launchtime_local.strftime('%Y-%m-%d %H:%M:%S')
+    days=abs(today_date_local - launchtime_local).days
+    running_times_str = "InstanceID: " + instance['InstanceId'] + "," + ' Instance Name: ' +name + "," + " Launch Time: " + str(launchtime_format)+ "," + " Number of days running: " + str(days)
     running_times = [name, str(days)]
     msg_running.append(running_times)
     msg_running_str.append(running_times_str)

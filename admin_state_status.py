@@ -35,8 +35,6 @@ import os
 
 aws_profile = os.getenv('AWS_PROFILE')
 region = os.getenv('region')
-# aws_profile = "cctqa"
-# region = "us-east-1"
 
 boto3.setup_default_session(profile_name=aws_profile)
 client = boto3.client('ec2', region)

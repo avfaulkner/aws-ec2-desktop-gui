@@ -8,17 +8,35 @@ import pytz
 import random
 import os
 
-# NOTE: if running in vscode in wsl, install jupyter to view graph in interactive window
+# NOTE: 
 
 # This script will query AWS for ec2 instances which have the slumbering-admin and t_role=admin tags and are in
 # the running or stopped state. 
+#
 # This script will produce:
-# 1. 2 csv files in the local directory with stopped and running admin vms.
-# 2. a list of each admins' stopped/running status via stdout, can be piped into another file, etc
-# 3. bar graphs that display each admins' stopped/running status
+#  1. 2 csv files in the local directory with stopped and running admin vms.
+#  2. a list of each admins' stopped/running status via stdout, can be piped into another file, etc
+#  3. bar graphs that display each admins' stopped/running status
+#
+# To run this script locally, please install: 
+#  pip install pandas matplotlib datetime boto3 pytz jupyter
+#  export region=<region>
+#  export AWS_PROFILE=<aws_profile>
+
+# To view the graphs: 
+#  **If running in wsl using vscode, pip install jupyter to view graph in interactive window, then 
+#  right click the file or on the page containing the code if the file is open and select "Run current file in interactive window".
+
+#  **If running the script in a terminal:
+#  install xming (X11 for Windows, needed to view graphs from wsl terminal also) from sourcefourge or VcXsrv (xserver).
+#  sudo apt-get install python3.8-tk
+#  export DISPLAY=localhost:0.0 (can add to .bashrc to make permanent)
+
 
 aws_profile = os.getenv('AWS_PROFILE')
 region = os.getenv('region')
+# aws_profile = "cctqa"
+# region = "us-east-1"
 
 boto3.setup_default_session(profile_name=aws_profile)
 client = boto3.client('ec2', region)

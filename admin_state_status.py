@@ -2,11 +2,20 @@
 import boto3
 from datetime import datetime, timedelta, timezone, tzinfo
 import csv 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas
 import pytz
 import random
 import os
+import json
+import sys
+# from PyQt5.QtCore import *
+# from PyQt5.QtGui import *
+# from PyQt5.QtWidgets import *
+# from admin_gui import MainWindow
+import tkinter
 
 # NOTE: 
 
@@ -33,25 +42,28 @@ import os
 #  export DISPLAY=localhost:0.0 (can add to .bashrc to make permanent)
 
 
-aws_profile = os.getenv('AWS_PROFILE')
-region = os.getenv('region')
+# aws_profile = os.getenv('AWS_PROFILE')
+# region = os.getenv('region')
+
+aws_profile = "cctqa"
+region = "us-east-1"
+
 
 boto3.setup_default_session(profile_name=aws_profile)
-client = boto3.client('ec2', region)
+ec2 = boto3.client('ec2', region)
+cloudtrail = boto3.client('cloudtrail')
 
+datetime_format = '%Y-%m-%d %H:%M:%S'
 today_date_utc = datetime.now(timezone.utc)
-today_date_format = today_date_utc.strftime('%Y-%m-%d %H:%M:%S')
+today_date_format = today_date_utc.strftime(datetime_format)
 today_date_local = datetime.now().astimezone() # empty brackets = local timezone
 
-running_reasons = []
-stopped_reasons = []
+
 msg_running=[]
 msg_stopped=[]
 
 instance_ids = []
 instance_names = []
-running_instances = []
-stopped_instances = []
 msg_running_str = []
 msg_stopped_str = []
 
@@ -62,7 +74,7 @@ stopped_file = 'admins_stopped.csv'
 
 def main():
     # Use the filter() method of the instances collection to retrieve
-    # all running Admin instances who have opted into the slumbering admin program. 
+    # all running and stopped Admin instances who have opted into the slumbering admin program. 
     filters = [
         {
             'Name': 'tag:t_role',
@@ -77,8 +89,9 @@ def main():
             'Values': ['true']  
         }
     ]
-    
-    reservations = client.describe_instances(Filters=filters).get('Reservations', [])
+    msg_running=[]
+    msg_stopped=[]
+    reservations = ec2.describe_instances(Filters=filters).get('Reservations', [])
     for reservation in reservations:
         for instance in reservation['Instances']:
             tags = {}
@@ -88,49 +101,57 @@ def main():
                     name=tag['Value']
 
                     if instance['State']['Name'] == 'running':
-                            msg_running, running_stdout = running_admins(name, instance)
+                        msg_running, running_stdout = running_admins(name, instance)
                     elif instance['State']['Name'] == 'stopped':
                         msg_stopped, stopped_stdout = stopped_admins(name, instance)
                     else:
                         pass # do nothing if instance state is not running or stopped. 
-
-
+    
     # running vm info
-    write_running_csv(msg_running)
-    print("Running Admins:\n",running_stdout)
-    bar_graph_running(running_file)
+    if len(msg_running) > 0:
+        write_running_csv(msg_running)
+        print("Running Admins:\n",running_stdout)
+        bar_graph_running(running_file)
+    else:
+        print('No running admins.\n')
     # stopped vm info
-    write_stopped_csv(msg_stopped)   
-    print("Stopped Admins:\n",stopped_stdout) 
-    bar_graph_stopped(stopped_file)
-
+    if len(msg_stopped) > 0:
+        write_stopped_csv(msg_stopped)   
+        print("Stopped Admins:\n",stopped_stdout) 
+        bar_graph_stopped(stopped_file)
+    else:
+        print('No stopped admins.')
+        
+    
 def stopped_admins(name, instance):
-    stopped_instances.append(instance)
+    event = last_accessed(instance['InstanceId']).strftime(datetime_format)
     instance_ids.append(instance['InstanceId'])
     instance_names.append(name)
-    stopped_reason = instance['StateTransitionReason']
-    stopped_reasons.append(stopped_reason)
-    transition_timestamp = datetime.strptime(instance['StateTransitionReason'][16:39], '%Y-%m-%d %H:%M:%S %Z')
+    stopped_reason = instance['StateTransitionReason'][16:35]
+    stopped_time = stopped_reason if stopped_reason != '' else '1111-11-11 11:11:11'
+    transition_timestamp = datetime.strptime(stopped_time, datetime_format)
     transition_timestamp_local = transition_timestamp.astimezone()  
-    transition_timestamp_format = transition_timestamp_local.strftime('%Y-%m-%d %H:%M:%S')
-    days=abs(today_date_local - transition_timestamp_local).days
-    stopped_times_str = "InstanceID: " + instance['InstanceId'] + "," + ' Instance Name: ' +name + "," + " Shutdown Time: " + str(transition_timestamp_format) + "," + " Number of days stopped: " + str(days)
-    stopped_times = [name, str(days+random.randrange(1,6))] # test with random values
+    transition_timestamp_format = transition_timestamp_local.strftime(datetime_format)
+    days = abs(today_date_local - transition_timestamp_local).days
+    days = days if stopped_reason != '' else 0
+    stopped_times_str = "InstanceID: " + instance['InstanceId'] + "," + ' Instance Name: ' +name + "," + " Shutdown Time: " + str(transition_timestamp_format) + "," + " Last Login: " + event +  " Number of days stopped: " + str(days)
+    stopped_times = [name, str(days)] # test with random values
     msg_stopped.append(stopped_times)
     msg_stopped_str.append(stopped_times_str)
     msg_stopped_str.append("\n")
     stopped_stdout = ''.join(msg_stopped_str)
     return msg_stopped, stopped_stdout
 
-
 def running_admins(name, instance):       
-    running_instances.append(instance)
+    event = last_accessed(instance['InstanceId']).strftime(datetime_format)
     instance_ids.append(instance['InstanceId'])
     instance_names.append(name)
-    launchtime_local = instance['LaunchTime'].astimezone()
-    launchtime_format = launchtime_local.strftime('%Y-%m-%d %H:%M:%S')
-    days=abs(today_date_local - launchtime_local).days
-    running_times_str = "InstanceID: " + instance['InstanceId'] + "," + ' Instance Name: ' +name + "," + " Launch Time: " + str(launchtime_format)+ "," + " Number of days running: " + str(days)
+    launchtime = instance['LaunchTime']
+    launchtime_local = launchtime.astimezone() if launchtime != '' else '1111-11-11 11:11:11+00:00'
+    launchtime_format = launchtime_local.strftime(datetime_format)
+    days = abs(today_date_local - launchtime_local).days
+    days = days if launchtime != '' else 0
+    running_times_str = "InstanceID: " + instance['InstanceId'] + "," + ' Instance Name: ' +name + "," + " Launch Time: " + str(launchtime_format)+ "," + " Last Login: " + event + "," + " Number of days running: " + str(days)
     running_times = [name, str(days)]
     msg_running.append(running_times)
     msg_running_str.append(running_times_str)
@@ -138,6 +159,57 @@ def running_admins(name, instance):
     running_stdout = ''.join(msg_running_str)
     return msg_running, running_stdout
 
+def last_accessed(instance):
+    try:
+        event = cloudtrail.lookup_events(
+        LookupAttributes=[
+            {
+                'AttributeKey': 'ResourceName',
+                'AttributeValue': instance
+            },
+             {
+                'AttributeKey': 'EventName',
+                'AttributeValue': 'AssumeRole'
+            },
+            {
+                'AttributeKey': 'EventSource',
+                'AttributeValue': "sts.amazonaws.com"
+            }
+        ],
+        MaxResults=50,
+        )
+        access_time =  event['Events'][0]['EventTime']
+        return access_time
+    except Exception as e:
+        print(f'Error finding last accessed time: {e}')
+
+###################################################################################
+# def last_accessed2():
+#     event = cloudtrail.lookup_events(
+#         LookupAttributes=[
+#             {
+#                 'AttributeKey': 'ResourceName',
+#                 'AttributeValue': "i-06ca1a363c85ddd2f"
+#             },
+#              {
+#                 'AttributeKey': 'EventName',
+#                 'AttributeValue': 'AssumeRole'
+#             },
+#             {
+#                 'AttributeKey': 'EventSource',
+#                 'AttributeValue': "sts.amazonaws.com"
+#             }
+#         ],
+#     MaxResults=50,
+#     # EventCategory='insight'
+#     )
+#     # return event['Events'][0]['EventTime']
+#     access_time = event['Events'][0]['EventTime']
+#     # access_time2 = json.loads(access_time)
+#     print(type(access_time))
+#     print(access_time.strftime(datetime_format)) 
+    
+##########################################################################################################
 
 def write_running_csv(data):
     header_running = ['Instance Name', 'Number of days running']

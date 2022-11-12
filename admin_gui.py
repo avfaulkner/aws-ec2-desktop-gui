@@ -1,60 +1,43 @@
 import os
 import sys
 
-from PyQt5 import QtCore, QtGui
-
-# from PyQt5.QtCore import *
-# from PyQt5.QtGui import *
+from PyQt5 import QtGui
+from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
-#UPDATED HERE: C:\Users\annie\OneDrive\codes
 
-class layout(QWidget):
-   def __init__(self, parent=None):
-      super(MainWindow, self).__init__(parent)
-      
-   
 
 
 class MainWindow(QMainWindow):
    def __init__(self, parent=None):
       super(MainWindow, self).__init__(parent)
       self.setWindowTitle("Admin State Status")
-      self.left = 200
-      self.top = 200
-      self.width = 320
-      self.height = 200
-      self.setGeometry(self.left, self.top, self.width, self.height)
-      # self.mdi = QMdiArea()
-      # self.setCentralWidget(self.mdi)
-      # layout = QHBoxLayout()
-      # self.setLayout(layout)
 
       # QMainWindow already comes with a layout; create a new widget to use a different one
       self.widget = QWidget(self)
       self.setCentralWidget(self.widget) 
-      # layout = QHBoxLayout(self.widget)
-      # layout.addItem(QSpacerItem(139, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
-      # vlay = QVBoxLayout()
-      # vlay.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
-      # layout.addLayout(vlay)
-      # layout.addItem(QSpacerItem(139, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
       # Create an outer layout using new widget to contain inner layouts
       outerLayout = QVBoxLayout(self.widget)
       # Create a two column form layout for the label and dropdown menu
-      topLayout = QFormLayout()
+      topLayout = QHBoxLayout()
       # Add a label and a combobox to the form layout
       # Drop down menu
       self.comboBox = QComboBox(self)
       self.comboBox.addItems(["C2", "P5", "P6", "P7", "P8", "P9"])
+      topLayout.addWidget(QLabel("Select an environment:")) 
+      topLayout.addWidget(self.comboBox)
+      self.button = QPushButton("Start")
+      self.button.pressed.connect(self.start_process)
+      topLayout.addWidget(self.button)
+
+      # switch credentials
       self.comboBox.currentIndexChanged.connect(self.dropdown_item)
-      # vlay.addWidget(self.comboBox)
-      # vlay.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
-      topLayout.addRow("Select an environment:", self.comboBox)
+
 
       # Create a layout for the graphs
       graphsLayout = QHBoxLayout()
+
 
       # Add the graphs to the layout
       graphsLayout.addWidget(QMessageBox())
@@ -62,7 +45,10 @@ class MainWindow(QMainWindow):
 
       # Create layout for terminal output
       outputLayout = QVBoxLayout()
-      outputLayout.addWidget(QMessageBox())
+      self.text = QPlainTextEdit()
+      self.text.setReadOnly(True)
+      outputLayout.addWidget(self.text)
+   
 
       # Nest the inner layouts into the outer layout
       outerLayout.addLayout(topLayout)
@@ -86,16 +72,47 @@ class MainWindow(QMainWindow):
       help.addAction("About")
       help.triggered[QAction].connect(self.help_actions)
 
+   def message(self, s):
+      self.text.appendPlainText(s)
+
+   def start_process(self):
+      self.message("Executing process.")
+      self.p = QProcess()  # Keep a reference to the QProcess (e.g. on self) while it's running.
+      self.p.readyReadStandardOutput.connect(self.handle_stdout)
+      self.p.readyReadStandardError.connect(self.handle_stderr)
+      self.p.stateChanged.connect(self.handle_state)
+      self.p.finished.connect(self.process_finished)  # Clean up once complete.
+      self.p.start("python3.8.exe", ['admin_state_status.py'])
+
+   def handle_stdout(self):
+      data = self.p.readAllStandardOutput()
+      stdout = bytes(data).decode("utf8")
+      self.message(stdout)
+
+   def handle_stderr(self):
+      data = self.p.readAllStandardError()
+      stderr = bytes(data).decode("utf8")
+      self.message(stderr)
+
+   def handle_state(self, state):
+      states = {
+         QProcess.NotRunning: 'Not running',
+         QProcess.Starting: 'Starting',
+         QProcess.Running: 'Running',
+      }
+      state_name = states[state]
+      self.message(f"State changed: {state_name}")
+
+   def process_finished(self):
+      self.message("Process finished.")
+      self.p = None
+
+
    def file_actions(self, q):
       print("triggered")
 
       if q.text() == "STG account":
          print("switch to stg account")
-         # sub = QMdiSubWindow()
-         # sub.setWidget(QTextEdit())
-         # sub.setWindowTitle("subwindow"+str(MainWindow.count))
-         # self.mdi.addSubWindow(sub)
-         # sub.show()
 
       if q.text() == "PROD account":
          print("switch to prod account")
@@ -122,12 +139,13 @@ class MainWindow(QMainWindow):
          b1 = QLabel(message, dlg)
          b1.move(50, 50)
          dlg.setWindowTitle("Dialog")
-         dlg.setWindowModality(QtCore.Qt.ApplicationModal) #dialogue cannot be bypassed; must be closed
          dlg.exec_()
 
    def dropdown_item(self, item):
       option = self.comboBox.currentText()
       print(f"export aws creds and region for {option}")
+
+      
 
 
 def main():

@@ -4,6 +4,11 @@ import sys
 from PyQt5 import QtGui
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+import matplotlib.pyplot as plt
+import random
+from admin_state_status import *
 
 
 
@@ -27,12 +32,12 @@ class MainWindow(QMainWindow):
       self.comboBox.addItems(["C2", "P5", "P6", "P7", "P8", "P9"])
       topLayout.addWidget(QLabel("Select an environment:")) 
       topLayout.addWidget(self.comboBox)
+      # switch credentials
+      self.comboBox.currentIndexChanged.connect(self.dropdown_item)
+
       self.button = QPushButton("Start")
       self.button.pressed.connect(self.start_process)
       topLayout.addWidget(self.button)
-
-      # switch credentials
-      self.comboBox.currentIndexChanged.connect(self.dropdown_item)
 
 
       # Create a layout for the graphs
@@ -41,7 +46,10 @@ class MainWindow(QMainWindow):
 
       # Add the graphs to the layout
       graphsLayout.addWidget(QMessageBox())
-      graphsLayout.addWidget(QMessageBox())
+
+      # # graphsLayout.addWidget(self.toolbar)
+      graphsLayout.addWidget(Graphs())
+
 
       # Create layout for terminal output
       outputLayout = QVBoxLayout()
@@ -72,6 +80,7 @@ class MainWindow(QMainWindow):
       help.addAction("About")
       help.triggered[QAction].connect(self.help_actions)
 
+   # send message data to gui textbox
    def message(self, s):
       self.text.appendPlainText(s)
 
@@ -83,6 +92,8 @@ class MainWindow(QMainWindow):
       self.p.stateChanged.connect(self.handle_state)
       self.p.finished.connect(self.process_finished)  # Clean up once complete.
       self.p.start("python3.8.exe", ['admin_state_status.py'])
+      
+
 
    def handle_stdout(self):
       data = self.p.readAllStandardOutput()
@@ -112,19 +123,19 @@ class MainWindow(QMainWindow):
       print("triggered")
 
       if q.text() == "STG account":
-         print("switch to stg account")
+         self.message("switch to stg account")
 
       if q.text() == "PROD account":
-         print("switch to prod account")
+         self.message("switch to prod account")
 
       if q.text() == "China account":
-         print("switch to China account")
+         self.message("switch to China account")
 
       if q.text() == "Add New Account":
-         print("open dialogue box to add new account creds")
+         self.message("open dialogue box to add new account creds")
 
       if q.text() == "Manage Accounts":
-         print("open dialogue box to modify existing account creds")
+         self.message("open dialogue box to modify existing account creds")
 
       if q.text() == "Quit":
          print("Quit program")
@@ -143,9 +154,68 @@ class MainWindow(QMainWindow):
 
    def dropdown_item(self, item):
       option = self.comboBox.currentText()
-      print(f"export aws creds and region for {option}")
+      message = f"export aws creds and region for {option}"
+      self.message(message)
 
       
+class Graphs(QDialog):
+      
+    # constructor
+    def __init__(self, parent=None):
+        super(Graphs, self).__init__(parent)
+  
+        # a figure instance to plot on
+        self.figure = plt.figure()
+  
+        # this is the Canvas Widget that
+        # displays the 'figure'it takes the
+        # 'figure' instance as a parameter to __init__
+        self.canvas = FigureCanvas(self.figure)
+  
+        # this is the Navigation widget
+        # it takes the Canvas widget and a parent
+        self.toolbar = NavigationToolbar(self.canvas, self)
+  
+        # Just some button connected to 'plot' method
+        self.button = QPushButton('Plot')
+          
+        # adding action to the button
+        self.button.clicked.connect(self.plot) ##########################################################
+  
+        # creating a Vertical Box layout
+        layout = QVBoxLayout()
+          
+        # adding tool bar to the layout
+        layout.addWidget(self.toolbar)
+          
+        # adding canvas to the layout
+        layout.addWidget(self.canvas)
+          
+        # adding push button to the layout
+        layout.addWidget(self.button)
+          
+        # setting layout to the main window
+        self.setLayout(layout)
+  
+    # action called by the push button
+    def plot(self):
+          
+        # random data
+        data = [bar_graph_running("admins_running.csv")]
+        plt.show()
+      #   bar_graph_running("admins_running.csv")
+  
+      #   # clearing old figure
+      #   self.figure.clear()
+  
+      #   # create an axis
+      #   ax = self.figure.add_subplot(111)
+  
+      #   # plot data
+      #   ax.plot(data, '*-')
+  
+        # refresh canvas
+        self.canvas.draw()
 
 
 def main():

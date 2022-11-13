@@ -23,62 +23,58 @@ class MainWindow(QMainWindow):
       self.setCentralWidget(self.widget) 
 
       # Create an outer layout using new widget to contain inner layouts
-      outerLayout = QVBoxLayout(self.widget)
+      self.outerLayout = QVBoxLayout(self.widget)
       # Create a two column form layout for the label and dropdown menu
-      topLayout = QHBoxLayout()
+      self.topLayout = QVBoxLayout()
       # Add a label and a combobox to the form layout
       # Drop down menu
       self.comboBox = QComboBox(self)
       self.comboBox.addItems(["C2", "P5", "P6", "P7", "P8", "P9"])
-      topLayout.addWidget(QLabel("Select an environment:")) 
-      topLayout.addWidget(self.comboBox)
+      self.topLayout.addWidget(QLabel("Select an environment:")) 
+      self.topLayout.addWidget(self.comboBox)
       # switch credentials
       self.comboBox.currentIndexChanged.connect(self.dropdown_item)
 
       self.button = QPushButton("Start")
       self.button.pressed.connect(self.start_process)
-      topLayout.addWidget(self.button)
+      self.topLayout.addWidget(self.button)
 
 
       # Create a layout for the graphs
-      graphsLayout = QHBoxLayout()
-
-
+      self.graphsLayout = QHBoxLayout()
       # Add the graphs to the layout
-      graphsLayout.addWidget(QMessageBox())
-
-      # # graphsLayout.addWidget(self.toolbar)
-      graphsLayout.addWidget(Graphs())
+      self.graphsLayout.addWidget(Graphs())
+      self.graphsLayout.addWidget(Graphs2())
 
 
       # Create layout for terminal output
-      outputLayout = QVBoxLayout()
+      self.outputLayout = QVBoxLayout()
       self.text = QPlainTextEdit()
       self.text.setReadOnly(True)
-      outputLayout.addWidget(self.text)
+      self.outputLayout.addWidget(self.text)
    
 
       # Nest the inner layouts into the outer layout
-      outerLayout.addLayout(topLayout)
-      outerLayout.addLayout(graphsLayout)
-      outerLayout.addLayout(outputLayout)
+      self.outerLayout.addLayout(self.topLayout)
+      self.outerLayout.addLayout(self.graphsLayout)
+      self.outerLayout.addLayout(self.outputLayout)
       # Set the window's main layout
-      self.setLayout(outerLayout)
+      self.setLayout(self.outerLayout)
 
       # menu bar
-      bar = self.menuBar()
-      file = bar.addMenu("File")
-      file.addAction("STG account")  # switch between stg and prod accounts
-      file.addAction("PROD account")
-      file.addAction("China account")
-      file.addAction("Add New Account")  # enter new credentials for new account
-      file.addAction("Manage Accounts")  # modify credentials for an account
-      file.addAction("Quit")
-      file.triggered[QAction].connect(self.file_actions)
+      self.bar = self.menuBar()
+      self.file = self.bar.addMenu("File")
+      self.file.addAction("STG account")  # switch between stg and prod accounts
+      self.file.addAction("PROD account")
+      self.file.addAction("China account")
+      self.file.addAction("Add New Account")  # enter new credentials for new account
+      self.file.addAction("Manage Accounts")  # modify credentials for an account
+      self.file.addAction("Quit")
+      self.file.triggered[QAction].connect(self.file_actions)
 
-      help = bar.addMenu("Help")
-      help.addAction("About")
-      help.triggered[QAction].connect(self.help_actions)
+      self.help = self.bar.addMenu("Help")
+      self.help.addAction("About")
+      self.help.triggered[QAction].connect(self.help_actions)
 
    # send message data to gui textbox
    def message(self, s):
@@ -157,65 +153,89 @@ class MainWindow(QMainWindow):
       message = f"export aws creds and region for {option}"
       self.message(message)
 
-      
-class Graphs(QDialog):
+
+class Graphs(QWidget):
       
     # constructor
-    def __init__(self, parent=None):
-        super(Graphs, self).__init__(parent)
-  
-        # a figure instance to plot on
-        self.figure = plt.figure()
-  
-        # this is the Canvas Widget that
-        # displays the 'figure'it takes the
-        # 'figure' instance as a parameter to __init__
-        self.canvas = FigureCanvas(self.figure)
-  
-        # this is the Navigation widget
-        # it takes the Canvas widget and a parent
-        self.toolbar = NavigationToolbar(self.canvas, self)
-  
-        # Just some button connected to 'plot' method
-        self.button = QPushButton('Plot')
-          
-        # adding action to the button
-        self.button.clicked.connect(self.plot) ##########################################################
-  
-        # creating a Vertical Box layout
-        layout = QVBoxLayout()
-          
-        # adding tool bar to the layout
-        layout.addWidget(self.toolbar)
-          
-        # adding canvas to the layout
-        layout.addWidget(self.canvas)
-          
-        # adding push button to the layout
-        layout.addWidget(self.button)
-          
-        # setting layout to the main window
-        self.setLayout(layout)
-  
+   def __init__(self, parent=None):
+      super(Graphs, self).__init__(parent) 
+      # a figure instance to plot on
+      self.figure = plt.figure(1)  
+      # this is the Canvas Widget that
+      # displays the 'figure'it takes the
+      # 'figure' instance as a parameter to __init__
+      self.canvas = FigureCanvas(self.figure)
+
+      # this is the Navigation widget
+      # it takes the Canvas widget and a parent
+      self.toolbar = NavigationToolbar(self.canvas, self)
+
+      # Just some button connected to 'plot' method
+      self.button = QPushButton('Plot')
+         
+      # adding action to the button
+      self.button.clicked.connect(self.plot) ##########################################################
+      # creating a Vertical Box layout
+      layout = QVBoxLayout()
+         
+      # adding tool bar to the layout
+      layout.addWidget(self.toolbar)
+         
+      # adding canvas to the layout
+      layout.addWidget(self.canvas)
+         
+      # adding push button to the layout
+      layout.addWidget(self.button)
+         
+      # setting layout to the main window
+      self.setLayout(layout)
+
     # action called by the push button
-    def plot(self):
-          
-        # random data
-        data = [bar_graph_running("admins_running.csv")]
-        plt.show()
-      #   bar_graph_running("admins_running.csv")
-  
-      #   # clearing old figure
-      #   self.figure.clear()
-  
-      #   # create an axis
-      #   ax = self.figure.add_subplot(111)
-  
-      #   # plot data
-      #   ax.plot(data, '*-')
-  
+   def plot(self):
+      bar_graph_running("admins_running.csv")
         # refresh canvas
-        self.canvas.draw()
+      self.canvas.draw()
+
+class Graphs2(QWidget):
+   def __init__(self, parent=None):
+      super(Graphs2, self).__init__(parent) 
+      # a figure instance to plot on
+      self.figure2 = plt.figure(2)  
+      # this is the Canvas Widget that
+      # displays the 'figure'it takes the
+      # 'figure' instance as a parameter to __init__
+      self.canvas2 = FigureCanvas(self.figure2)
+
+      # this is the Navigation widget
+      # it takes the Canvas widget and a parent
+      self.toolbar2 = NavigationToolbar(self.canvas2, self)
+
+      # Just some button connected to 'plot' method
+      self.button2 = QPushButton('Plot')
+         
+      # adding action to the button
+      self.button2.clicked.connect(self.plot2) ##########################################################
+      # creating a Vertical Box layout
+      layout = QVBoxLayout()
+         
+      # adding tool bar to the layout
+      layout.addWidget(self.toolbar2)
+         
+      # adding canvas to the layout
+      layout.addWidget(self.canvas2)
+         
+      # adding push button to the layout
+      layout.addWidget(self.button2)
+         
+      # setting layout to the main window
+      self.setLayout(layout)
+
+    # action called by the push button
+   def plot2(self):
+      bar_graph_stopped("admins_stopped.csv")
+        # refresh canvas
+      self.canvas2.draw()
+
 
 
 def main():

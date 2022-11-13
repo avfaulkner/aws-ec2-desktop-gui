@@ -1,9 +1,6 @@
-#!/usr/bin/python3.8
 import boto3
 from datetime import datetime, timedelta, timezone, tzinfo
 import csv 
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas
 import pytz
@@ -15,7 +12,6 @@ import sys
 # from PyQt5.QtGui import *
 # from PyQt5.QtWidgets import *
 # from admin_gui import MainWindow
-import tkinter
 
 # NOTE: 
 
@@ -42,10 +38,10 @@ import tkinter
 #  export DISPLAY=localhost:0.0 (can add to .bashrc to make permanent)
 
 
-# aws_profile = os.getenv('AWS_PROFILE')
+aws_profile = os.getenv('AWS_PROFILE')
 # region = os.getenv('region')
 
-aws_profile = "cctqa"
+# aws_profile = "cctqa"
 region = "us-east-1"
 
 
@@ -102,25 +98,25 @@ def main():
 
                     if instance['State']['Name'] == 'running':
                         msg_running, running_stdout = running_admins(name, instance)
-                    elif instance['State']['Name'] == 'stopped':
-                        msg_stopped, stopped_stdout = stopped_admins(name, instance)
+                    # elif instance['State']['Name'] == 'stopped':
+                    #     msg_stopped, stopped_stdout = stopped_admins(name, instance)
                     else:
                         pass # do nothing if instance state is not running or stopped. 
-    
+                    
     # running vm info
     if len(msg_running) > 0:
         write_running_csv(msg_running)
         print("Running Admins:\n",running_stdout)
-        bar_graph_running(running_file)
+        # bar_graph_running(running_file)
     else:
         print('No running admins.\n')
     # stopped vm info
-    if len(msg_stopped) > 0:
-        write_stopped_csv(msg_stopped)   
-        print("Stopped Admins:\n",stopped_stdout) 
-        bar_graph_stopped(stopped_file)
-    else:
-        print('No stopped admins.')
+    # if len(msg_stopped) > 0:
+    #     write_stopped_csv(msg_stopped)   
+    #     print("Stopped Admins:\n",stopped_stdout) 
+    #     bar_graph_stopped(stopped_file)
+    # else:
+    #     print('No stopped admins.')
         
     
 def stopped_admins(name, instance):
@@ -226,6 +222,7 @@ def write_stopped_csv(data):
         writer.writerows(data)
 
 def bar_graph_running(file):
+    plt.figure(1)
     data = pandas.read_csv(file)
     df = pandas.DataFrame(data)
     X = list(df.iloc[:, 0])
@@ -235,9 +232,10 @@ def bar_graph_running(file):
     plt.ylabel("Number of days running")
     plt.xlabel("Instance Name")
     plt.xticks(rotation=45, ha='right')
-    plt.show()
+    # plt.show()
 
 def bar_graph_stopped(file):
+    plt.figure(2)
     data = pandas.read_csv(file)
     df = pandas.DataFrame(data)
     X = list(df.iloc[:, 0])
@@ -247,7 +245,7 @@ def bar_graph_stopped(file):
     plt.ylabel("Number of days stopped")
     plt.xlabel("Instance Name")
     plt.xticks(rotation=45, ha='right')
-    plt.show()
+    # plt.show()
 
 def pie_chart():
     pass

@@ -1,4 +1,4 @@
-# AWS EC2 Desktop Tool
+# AWS EC2 Desktop Application
 
 This application allow the user to view information about specific instances via a desktop application.
 

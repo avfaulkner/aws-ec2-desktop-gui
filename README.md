@@ -12,6 +12,7 @@ To run this script locally, please run:
 - pip install pandas matplotlib datetime boto3 pytz jupyter
 - export region=(your desired region)
 - export AWS_PROFILE=(your aws profile name)
+- in the python files, add your desired variables
 
 <b>To view the graphs: </b>  
 If running in wsl using vscode, `pip install jupyter` to view graph in interactive window, then 

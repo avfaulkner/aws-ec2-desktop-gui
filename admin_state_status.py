@@ -15,12 +15,12 @@ import sys
 
 # NOTE: 
 
-# This script will query AWS for ec2 instances which have the slumbering-admin and t_role=admin tags and are in
+# This script will query AWS for ec2 instances which have the speficic tags and are in
 # the running or stopped state. 
 #
 # This script will produce:
-#  1. 2 csv files in the local directory with stopped and running admin vms.
-#  2. a list of each admins' stopped/running status via stdout, can be piped into another file, etc
+#  1. 2 csv files in the local directory with stopped and running vms.
+#  2. a list of each machines' stopped/running status via stdout, can be piped into another file, etc
 #  3. bar graphs that display each admins' stopped/running status
 #
 # To run this script locally, please install: 
@@ -63,8 +63,8 @@ instance_names = []
 msg_running_str = []
 msg_stopped_str = []
 
-running_file = 'admins_running.csv'
-stopped_file = 'admins_stopped.csv'
+running_file = 'machines_running.csv'
+stopped_file = 'machines_stopped.csv'
 
 
 
@@ -73,16 +73,12 @@ def main():
     # all running and stopped Admin instances who have opted into the slumbering admin program. 
     filters = [
         {
-            'Name': 'tag:t_role',
-            'Values': ['Admin']
-        },
-        {
             'Name': 'instance-state-name', 
             'Values': ['running', 'stopped']
         },
         {
-            'Name': 'tag:slumbering-admin', 
-            'Values': ['true']  
+            'Name': 'tag:<your tag key>', 
+            'Values': ['<your tag value>']  
         }
     ]
     msg_running=[]

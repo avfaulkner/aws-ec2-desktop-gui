@@ -11,7 +11,7 @@ import sys
 # from PyQt5.QtCore import *
 # from PyQt5.QtGui import *
 # from PyQt5.QtWidgets import *
-# from admin_gui import MainWindow
+# from machine_gui import MainWindow
 
 # NOTE: 
 
@@ -21,7 +21,7 @@ import sys
 # This script will produce:
 #  1. 2 csv files in the local directory with stopped and running vms.
 #  2. a list of each machines' stopped/running status via stdout, can be piped into another file, etc
-#  3. bar graphs that display each admins' stopped/running status
+#  3. bar graphs that display each machines' stopped/running status
 #
 # To run this script locally, please install: 
 #  pip install pandas matplotlib datetime boto3 pytz jupyter
@@ -70,7 +70,7 @@ stopped_file = 'machines_stopped.csv'
 
 def main():
     # Use the filter() method of the instances collection to retrieve
-    # all running and stopped Admin instances who have opted into the slumbering admin program. 
+    # all running and stopped machine instances who have opted into the slumbering machine program. 
     filters = [
         {
             'Name': 'instance-state-name', 
@@ -93,29 +93,29 @@ def main():
                     name=tag['Value']
 
                     if instance['State']['Name'] == 'running':
-                        msg_running, running_stdout = running_admins(name, instance)
+                        msg_running, running_stdout = running_machines(name, instance)
                     # elif instance['State']['Name'] == 'stopped':
-                    #     msg_stopped, stopped_stdout = stopped_admins(name, instance)
+                    #     msg_stopped, stopped_stdout = stopped_machines(name, instance)
                     else:
                         pass # do nothing if instance state is not running or stopped. 
                     
     # running vm info
     if len(msg_running) > 0:
         write_running_csv(msg_running)
-        print("Running Admins:\n",running_stdout)
+        print("Running machines:\n",running_stdout)
         # bar_graph_running(running_file)
     else:
-        print('No running admins.\n')
+        print('No running machines.\n')
     # stopped vm info
     # if len(msg_stopped) > 0:
     #     write_stopped_csv(msg_stopped)   
-    #     print("Stopped Admins:\n",stopped_stdout) 
+    #     print("Stopped machines:\n",stopped_stdout) 
     #     bar_graph_stopped(stopped_file)
     # else:
-    #     print('No stopped admins.')
+    #     print('No stopped machines.')
         
     
-def stopped_admins(name, instance):
+def stopped_machines(name, instance):
     event = last_accessed(instance['InstanceId']).strftime(datetime_format)
     instance_ids.append(instance['InstanceId'])
     instance_names.append(name)
@@ -134,7 +134,7 @@ def stopped_admins(name, instance):
     stopped_stdout = ''.join(msg_stopped_str)
     return msg_stopped, stopped_stdout
 
-def running_admins(name, instance):       
+def running_machines(name, instance):       
     event = last_accessed(instance['InstanceId']).strftime(datetime_format)
     instance_ids.append(instance['InstanceId'])
     instance_names.append(name)
@@ -205,15 +205,15 @@ def last_accessed(instance):
 
 def write_running_csv(data):
     header_running = ['Instance Name', 'Number of days running']
-    with open(running_file, 'w') as admins_running:
-        writer = csv.writer(admins_running)
+    with open(running_file, 'w') as machines_running:
+        writer = csv.writer(machines_running)
         writer.writerow(header_running)
         writer.writerows(data)
 
 def write_stopped_csv(data):
     header_stopped = ['Instance Name', 'Number of days stopped']
-    with open(stopped_file, 'w') as admins_stopped:
-        writer = csv.writer(admins_stopped)
+    with open(stopped_file, 'w') as machines_stopped:
+        writer = csv.writer(machines_stopped)
         writer.writerow(header_stopped)
         writer.writerows(data)
 
@@ -224,7 +224,7 @@ def bar_graph_running(file):
     X = list(df.iloc[:, 0])
     Y = list(df.iloc[:, 1])
     plt.bar(X, Y, color='g')
-    plt.title("Running Admins")
+    plt.title("Running machines")
     plt.ylabel("Number of days running")
     plt.xlabel("Instance Name")
     plt.xticks(rotation=45, ha='right')
@@ -237,7 +237,7 @@ def bar_graph_stopped(file):
     X = list(df.iloc[:, 0])
     Y = list(df.iloc[:, 1])
     plt.bar(X, Y, color='r')
-    plt.title("Stopped Admins")
+    plt.title("Stopped machines")
     plt.ylabel("Number of days stopped")
     plt.xlabel("Instance Name")
     plt.xticks(rotation=45, ha='right')

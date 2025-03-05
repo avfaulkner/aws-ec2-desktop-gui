@@ -8,7 +8,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 import random
-from admin_state_status import *
+from machine_state_status import *
 
 
 
@@ -16,7 +16,7 @@ from admin_state_status import *
 class MainWindow(QMainWindow):
    def __init__(self, parent=None):
       super(MainWindow, self).__init__(parent)
-      self.setWindowTitle("Admin State Status")
+      self.setWindowTitle("machine State Status")
 
       # QMainWindow already comes with a layout; create a new widget to use a different one
       self.widget = QWidget(self)
@@ -87,7 +87,7 @@ class MainWindow(QMainWindow):
       self.p.readyReadStandardError.connect(self.handle_stderr)
       self.p.stateChanged.connect(self.handle_state)
       self.p.finished.connect(self.process_finished)  # Clean up once complete.
-      self.p.start("python3.8.exe", ['admin_state_status.py'])
+      self.p.start("python3.8.exe", ['machine_state_status.py'])
       
 
 
@@ -140,8 +140,8 @@ class MainWindow(QMainWindow):
       print("triggered")
       if q.text() == "About":
          dlg = QDialog()
-         message = "Admin State Status\n \
-               This script will query AWS for EC2 instances which have the slumbering-admin=true and t_role=Admin tags and are in\n \
+         message = "machine State Status\n \
+               This script will query AWS for EC2 instances which have the slumbering-machine=true and t_role=machine tags and are in\n \
                the running or stopped state."
          b1 = QLabel(message, dlg)
          b1.move(50, 50)
@@ -192,7 +192,7 @@ class Graphs(QWidget):
 
     # action called by the push button
    def plot(self):
-      bar_graph_running("admins_running.csv")
+      bar_graph_running("machines_running.csv")
         # refresh canvas
       self.canvas.draw()
 
@@ -232,7 +232,7 @@ class Graphs2(QWidget):
 
     # action called by the push button
    def plot2(self):
-      bar_graph_stopped("admins_stopped.csv")
+      bar_graph_stopped("machines_stopped.csv")
         # refresh canvas
       self.canvas2.draw()
 
